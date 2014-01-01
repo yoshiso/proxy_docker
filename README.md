@@ -10,7 +10,7 @@ Vagrant,VirtualBox
 
 ##Installation
 
-git clone git@github.com:yss44/proxydocker.git ~/.proxydocker
+git clone git@github.com:yss44/proxy_docker.git ~/.proxydocker
 
 ##Usage
 
