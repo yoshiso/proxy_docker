@@ -95,7 +95,8 @@ case "$1" in
     ;;
   remote)
     case "$2" in
-      list) #[todo] - get with container name or id
+      # [todo] - get with container name or id
+      list)
         loadSettings
         echo "ALL Running Docker Container IPs"
         ssh -t -i $HOME/.vagrant.d/insecure_private_key -p $host_port $host_username@$host_ip '\
