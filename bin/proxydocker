@@ -1,0 +1,120 @@
+#!/bin/bash
+
+PROXY_DOCKER_ROOT="$HOME/.proxydocker"
+PROXY_DOCKER_CMD="$PROXY_DOCKER_ROOT/proxydocker.sh"
+
+# Ensure directory for setup
+if ! [ -d $PROXY_DOCKER_ROOT ];then
+  mkdir $PROXY_DOCKER_ROOT
+  echo "Created ProxyDocker directory in $PROXY_DOCKER_ROOT"
+fi
+
+
+function help() {
+  echo "ProxyDocker additional commands:"
+  echo "  ssh [docker ip] [docker port]                   SSH Docker Container in Vagrant"
+  echo "  setup [vm ip] [vm port] [vm username]"
+  echo "               [container's private key path]     Setup Docker VM"
+  echo "  reset                                           Reset settings"
+  echo "  remote list                                     Show Running Docker Container IPs"
+  echo "  help                                            Help for ProxyDocker"
+  echo ""
+}
+
+function checkHostInfo(){
+  if [ -f $PROXY_DOCKER_ROOT/host_info ];then
+    echo "Settings already exists"
+    help
+    exit 0
+  fi
+}
+
+function loadSettings(){
+  if [ -f $PROXY_DOCKER_ROOT/host_info ];then
+    local filename="$PROXY_DOCKER_ROOT/host_info"
+    local host_info=(`cat $filename`) #0=>ip 1=>port 2=>username # eval echo "${ary[0]}"
+    host_ip=${host_info[0]}
+    host_port=${host_info[1]}
+    host_username=${host_info[2]}
+    container_private_key=${host_info[3]}
+  else
+    echo "Please setup Docker host VM"
+    exit 0
+  fi
+}
+
+function showSettings(){
+    if [ -f $PROXY_DOCKER_ROOT/host_info ];then
+      loadSettings
+      echo "Docker Host IP Adress      : ${host_ip}"
+      echo "Docker Host Port           : ${host_port}"
+      echo "Docker Host User           : ${host_username}"
+      echo "Contaienr private key path : ${container_private_key}"
+    fi
+}
+
+
+# Parse args
+case "$1" in
+  ssh)
+    loadSettings
+    if [ $# -eq 3 ];then
+      ssh -oProxyCommand="ssh -t -t -W %h:%p -i $HOME/.vagrant.d/insecure_private_key -p $host_port $host_username@$host_ip"\
+          -t -t -i $HOME/.ssh/docker/id_docker_ssh.dev -p $3 yoshiso@$2
+#    elif [ $# -eq 2 ];then
+#        ssh -oProxyCommand="ssh -t -t -W %h:%p -i $HOME/.vagrant.d/insecure_private_key -p $host_port $host_username@$host_ip"\
+#          -t -t -i ~/.ssh/docker/id_docker_ssh.dev -p 2222 yoshiso@$2
+    else
+        help
+    fi
+    ;;
+
+  setup)
+    checkHostInfo
+    if [ $# -eq 5 ];then
+      echo "Start setuping ProxyDocker"
+      echo $2 >> $PROXY_DOCKER_ROOT/host_info #host ip
+      echo $3 >> $PROXY_DOCKER_ROOT/host_info #host port
+      echo $4 >> $PROXY_DOCKER_ROOT/host_info #host username
+      echo $5 >> $PROXY_DOCKER_ROOT/host_info #private_key for docker container
+      echo "Finish Setupping ProxyDocker"
+      showSettings
+    else
+      help
+    fi
+    ;;
+
+  reset)
+    if [ -f $PROXY_DOCKER_ROOT/host_info ];then
+      rm $PROXY_DOCKER_ROOT/host_info
+    fi
+    ;;
+
+  show)
+    showSettings
+    ;;
+  remote)
+    case "$2" in
+      list) #[todo] - get with container name or id
+        loadSettings
+        echo "ALL Running Docker Container IPs"
+        ssh -t -i $HOME/.vagrant.d/insecure_private_key -p $host_port $host_username@$host_ip '\
+          docker ps -q | xargs docker inspect -format="{{ .NetworkSettings.IPAddress }}"'
+      ;;
+    "")
+      help
+      ;;
+    *)
+      help
+      exit $?
+    esac
+    ;;
+  "")
+    help
+    ;;
+  *)
+    help
+    exit $?
+esac
+
+
