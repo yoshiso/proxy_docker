@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROXY_DOCKER_ROOT="$HOME/.proxydocker"
+PROXY_DOCKER_ROOT="$HOME/.proxy_docker"
 PROXY_DOCKER_CMD="$PROXY_DOCKER_ROOT/proxydocker.sh"
 
 # Ensure directory for setup
